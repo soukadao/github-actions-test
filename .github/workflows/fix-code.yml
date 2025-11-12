@@ -34,13 +34,11 @@ jobs:
             await github.rest.pulls.create({
               owner: context.repo.owner,
               repo: context.repo.repo,
-              title: "auto fix codex"
-              head: codex/auto-fix-${{ github.run_number }}
-              base: main
-              issue_number: github.event.issue.number,
+              title: "auto fix codex",
+              head: `codex/auto-fix-${{ github.run_number }}`,
+              base: "main",
               body: "Codexにより自動で修正されました。",
-              draft: true,
-              issue: ${{ github.event.issue.number }}
+              draft: true
             });
         
     
