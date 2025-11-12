@@ -31,11 +31,16 @@ jobs:
         with:
           github-token: ${{ github.token }}
           script: |
-            await github.rest.issues.createComment({
+            await github.rest..pulls.create({
               owner: context.repo.owner,
               repo: context.repo.repo,
+              title: "auto fix codex"
+              head: codex/auto-fix-${{ github.run_number }}
+              base: main
               issue_number: github.event.issue.number,
               body: "Codexにより自動で修正されました。",
+              draft: true,
+              issue: ${{ github.event.issue.number }}
             });
         
     
