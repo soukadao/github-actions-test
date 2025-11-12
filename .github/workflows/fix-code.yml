@@ -1,0 +1,42 @@
+name: fix code
+on:
+  issues:
+    types: [labeled]
+jobs:
+  codex:
+    if: github.event.label.name == 'bug'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+      - name: Run Codex
+        uses: openai/codex-action@v1
+        id: codex
+        with:
+          openai-api-key: ${{ secrets.OPENAI_API_KEY }}
+          prompt: |
+            Issueの内容からバグを修正して下さい。
+            
+            Issue Content:
+
+            ${{ github.event.issue.body }}
+      - name: create pull request
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ github.token }}
+          script: |
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: github.event.issue.number,
+              body: "Codexにより自動で修正されました。",
+            });
+        
+    
+        
+
