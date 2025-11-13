@@ -67,7 +67,7 @@ jobs:
           REVIEW_COMMENT: ${{ needs.codex.outputs.review_comment }}
           NEEDS_FIX: ${{ needs.codex.outputs.needs_fix }}
         with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
+          github-token: ${{ secrets.GH_TOKEN }}
           script: |
             const needsFix = process.env.NEEDS_FIX === 'true';
             const reviewEvent = needsFix ? 'REQUEST_CHANGES' : 'APPROVE';
