@@ -50,7 +50,9 @@ jobs:
               owner: context.repo.owner,
               repo: context.repo.repo,
               head: `codex/auto-fix-${{ github.run_number }}`,
-              base: "main"
+              base: "main",
+              title: `Fix: Auto-fix for issue #${{ github.event.issue.number }}`,
+              body: `This PR was automatically created to fix the bug reported in #${{ github.event.issue.number }}.\n\n## Original Issue\n\n${{ github.event.issue.body }}\n\n---\n\nAutomated fix by Codex.`
             });
         
     
