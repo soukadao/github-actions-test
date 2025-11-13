@@ -61,12 +61,13 @@ jobs:
     if: needs.codex.outputs.review_comment != ''
     permissions:
       pull-requests: write
+      contents: write
+    env:
+      REVIEW_COMMENT: ${{ needs.codex.outputs.review_comment }}
+      NEEDS_FIX: ${{ needs.codex.outputs.needs_fix }}
     steps:
       - name: Submit Review
         uses: actions/github-script@v7
-        env:
-          REVIEW_COMMENT: ${{ needs.codex.outputs.review_comment }}
-          NEEDS_FIX: ${{ needs.codex.outputs.needs_fix }}
         with:
           github-token: ${{ secrets.GH_TOKEN }}
           script: |
@@ -79,4 +80,17 @@ jobs:
               pull_number: context.payload.pull_request.number,
               body: process.env.REVIEW_COMMENT,
               event: reviewEvent
+            });
+
+      - name: Merge PR to main
+        if: env.NEEDS_FIX == 'false'
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GH_TOKEN }}
+          script: |
+            await github.rest.pulls.merge({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: context.payload.pull_request.number,
+              merge_method: 'merge'
             });
