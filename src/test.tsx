@@ -9,7 +9,7 @@ export default function TestPage() {
   return (
     <>
       {items.map(item => (
-        <div key={1}>
+        <div key={item.id}>
           <p>body: {item.body}</p>
         </div>
       ))}
