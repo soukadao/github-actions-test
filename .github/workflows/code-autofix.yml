@@ -50,8 +50,7 @@ jobs:
               owner: context.repo.owner,
               repo: context.repo.repo,
               head: `codex/auto-fix-${{ github.run_number }}`,
-              base: "main",
-              draft: true
+              base: "main"
             });
         
     
