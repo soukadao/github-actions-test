@@ -1,0 +1,111 @@
+name: code review fix
+on:
+  pull_request_review:
+    types: [submitted]
+
+jobs:
+  auto-fix:
+    if: github.event.review.state == 'changes_requested'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: read
+    steps:
+      - name: Check fix attempt count
+        id: check_count
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const { data: commits } = await github.rest.pulls.listCommits({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: context.payload.pull_request.number
+            });
+
+            const autoFixCommits = commits.filter(c =>
+              c.commit.message.includes('[auto-fix]')
+            );
+
+            const attemptCount = autoFixCommits.length;
+            const maxAttempts = 5;
+
+            core.setOutput('attempt_count', attemptCount);
+            core.setOutput('should_continue', attemptCount < maxAttempts);
+
+            if (attemptCount >= maxAttempts) {
+              core.warning(`Maximum fix attempts (${maxAttempts}) reached. Stopping auto-fix.`);
+            }
+
+      - name: Checkout PR branch
+        if: steps.check_count.outputs.should_continue == 'true'
+        uses: actions/checkout@v5
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+          fetch-depth: 0
+
+      - name: Get all review comments
+        if: steps.check_count.outputs.should_continue == 'true'
+        id: get_reviews
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const { data: reviews } = await github.rest.pulls.listReviews({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: context.payload.pull_request.number
+            });
+
+            const changesRequestedReviews = reviews
+              .filter(r => r.state === 'CHANGES_REQUESTED')
+              .map(r => r.body)
+              .join('\n\n---\n\n');
+
+            core.setOutput('review_comments', changesRequestedReviews);
+
+      - name: Run Codex to fix issues
+        if: steps.check_count.outputs.should_continue == 'true'
+        id: codex_fix
+        uses: openai/codex-action@v1
+        with:
+          openai-api-key: ${{ secrets.OPENAI_API_KEY }}
+          prompt: |
+            これはPR #${{ github.event.pull_request.number }} の自動修正タスクです。
+
+            以下のレビューコメントで指摘された問題を修正してください：
+
+            ${{ steps.get_reviews.outputs.review_comments }}
+
+            修正内容：
+            - レビューで指摘された全ての問題に対応してください
+            - コードの品質を保ちながら修正してください
+            - 不要な変更は加えないでください
+
+            PR title and body:
+            ----
+            ${{ github.event.pull_request.title }}
+            ${{ github.event.pull_request.body }}
+
+      - name: Setup Git
+        if: steps.check_count.outputs.should_continue == 'true'
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Commit and push fixes
+        if: steps.check_count.outputs.should_continue == 'true'
+        run: |
+          git add .
+          if git diff --staged --quiet; then
+            echo "No changes to commit"
+            exit 0
+          fi
+
+          ATTEMPT_NUM=$((  ${{ steps.check_count.outputs.attempt_count }} + 1 ))
+          git commit -m "[auto-fix] Address review comments (attempt ${ATTEMPT_NUM}/5)
+
+          Automated fix based on review feedback.
+
+          Co-Authored-By: github-actions[bot] <github-actions[bot]@users.noreply.github.com>"
+          git push origin ${{ github.event.pull_request.head.ref }}
