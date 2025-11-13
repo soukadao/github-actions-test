@@ -28,6 +28,7 @@ jobs:
         with:
           openai-api-key: ${{ secrets.OPENAI_API_KEY }}
           output-schema-file: .github/schema/review.json
+          allow-bots: true
           prompt: |
             This is PR #${{ github.event.pull_request.number }} for ${{ github.repository }}.
 
