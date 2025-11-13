@@ -43,16 +43,24 @@ jobs:
 
       - name: create pull request
         uses: actions/github-script@v7
+        env:
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+          ISSUE_BODY: ${{ github.event.issue.body }}
+          RUN_NUMBER: ${{ github.run_number }}
         with:
           github-token: ${{ secrets.GH_TOKEN }}
           script: |
+            const issueNumber = process.env.ISSUE_NUMBER;
+            const issueBody = process.env.ISSUE_BODY;
+            const runNumber = process.env.RUN_NUMBER;
+
             await github.rest.pulls.create({
               owner: context.repo.owner,
               repo: context.repo.repo,
-              head: `codex/auto-fix-${{ github.run_number }}`,
+              head: `codex/auto-fix-${runNumber}`,
               base: "main",
-              title: `Fix: Auto-fix for issue #${{ github.event.issue.number }}`,
-              body: `This PR was automatically created to fix the bug reported in #${{ github.event.issue.number }}.\n\n## Original Issue\n\n${{ github.event.issue.body }}\n\n---\n\nAutomated fix by Codex.`
+              title: `Fix: Auto-fix for issue #${issueNumber}`,
+              body: `This PR was automatically created to fix the bug reported in #${issueNumber}.\n\n## Original Issue\n\n${issueBody}\n\n---\n\nAutomated fix by Codex.`
             });
         
     
