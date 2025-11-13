@@ -71,7 +71,7 @@ jobs:
           github-token: ${{ secrets.GH_TOKEN }}
           script: |
             const needsFix = process.env.NEEDS_FIX === 'true';
-            const reviewEvent = needsFix ? 'REQUEST_CHANGES' : 'APPROVE';
+            const reviewEvent = needsFix ? 'REQUEST_CHANGES' : 'COMMENT';
 
             await github.rest.pulls.createReview({
               owner: context.repo.owner,
